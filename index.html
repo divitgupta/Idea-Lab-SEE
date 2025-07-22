@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Smart Safety Helmet Dashboard</title>
+  <style>
+    body {
+      background-color: #0d1117;
+      color: #ffffff;
+      font-family: 'Segoe UI', sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+
+    h1 {
+      margin-top: 20px;
+    }
+
+    .status-warning {
+      background-color: #f0b429;
+      color: #000;
+      padding: 10px;
+      font-weight: bold;
+      margin: 10px auto;
+      width: fit-content;
+      border-radius: 5px;
+    }
+
+    .grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 20px auto;
+      gap: 20px;
+    }
+
+    .box {
+      background: #161b22;
+      border-radius: 10px;
+      padding: 15px;
+      width: 200px;
+      box-shadow: 0 0 8px rgba(255,255,255,0.1);
+    }
+
+    .gauge-container {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      flex-wrap: wrap;
+      margin-top: 30px;
+    }
+
+    .gauge {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background: conic-gradient(#444 0deg, #444 360deg);
+      position: relative;
+    }
+
+    .gauge-value {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 20px;
+      font-weight: bold;
+      color: white;
+    }
+
+    .label {
+      margin-top: 8px;
+      font-weight: bold;
+    }
+
+    .helmet-status {
+      margin-top: 30px;
+      font-size: 18px;
+      color: #00ff9f;
+    }
+  </style>
+</head>
+<body>
+  <h1>🛡️ Smart Safety Construction Helmet</h1>
+  <div class="status-warning" id="alert">✅ System Normal</div>
+
+  <div class="grid">
+    <div class="box"><h3>G-Force</h3><div id="gfVal">--</div></div>
+    <div class="box"><h3>Temperature</h3><div id="tempVal">--</div></div>
+    <div class="box"><h3>Humidity</h3><div id="humVal">--</div></div>
+    <div class="box"><h3>Gas</h3><div id="gasVal">--</div></div>
+  </div>
+
+  <div class="helmet-status" id="helmetStatus">Helmet Status: --</div>
+
+  <div class="gauge-container">
+    <div>
+      <div class="gauge" id="gasGauge"><div class="gauge-value" id="gasGaugeVal">--</div></div>
+      <div class="label">Gas Level</div>
+    </div>
+    <div>
+      <div class="gauge" id="tempGauge"><div class="gauge-value" id="tempGaugeVal">--</div></div>
+      <div class="label">Temperature</div>
+    </div>
+    <div>
+      <div class="gauge" id="humGauge"><div class="gauge-value" id="humGaugeVal">--</div></div>
+      <div class="label">Humidity</div>
+    </div>
+  </div>
+
+  <script>
+    const esp32URL = "http://172.20.10.12/data"; // Replace with your ESP32 IP
+
+    function updateGauge(id, value, max, color) {
+      const deg = Math.min(360, (value / max) * 360);
+      document.getElementById(id).style.background = `conic-gradient(${color} ${deg}deg, #222 ${deg}deg 360deg)`;
+    }
+
+    function fetchData() {
+      fetch(esp32URL)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("gfVal").innerText = data.gforce + " g";
+          document.getElementById("tempVal").innerText = data.temperature + " °C";
+          document.getElementById("humVal").innerText = data.humidity + " %";
+          document.getElementById("gasVal").innerText = data.gas + " ppm";
+          document.getElementById("helmetStatus").innerText = data.helmet == 0 ? "Helmet Status: WORN" : "Helmet Status: NOT WORN";
+          document.getElementById("alert").innerText = data.hazard;
+
+          updateGauge("gasGauge", data.gas, 1000, "#ff5252");
+          updateGauge("tempGauge", data.temperature, 60, "#03a9f4");
+          updateGauge("humGauge", data.humidity, 100, "#b76aff");
+
+          document.getElementById("gasGaugeVal").innerText = data.gas + " ppm";
+          document.getElementById("tempGaugeVal").innerText = data.temperature + " °C";
+          document.getElementById("humGaugeVal").innerText = data.humidity + " %";
+        })
+        .catch(() => {
+          document.getElementById("alert").innerText = "⚠️ Unable to connect to ESP32.";
+        });
+    }
+
+    setInterval(fetchData, 1000);
+  </script>
+</body>
+</html>
